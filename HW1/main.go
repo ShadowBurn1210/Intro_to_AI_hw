@@ -295,7 +295,7 @@ func (c *Cleaner) decideToClean(roomData [][]string) {
 }
 
 func main() {
-	roomData := readCsvFile(`C:\Users\Admin\GolandProjects\Intro_to_AI_hw\room.csv`)
+	roomData := readCsvFile(`C:\Users\Admin\GolandProjects\Intro_to_AI_hw\HW1\room.csv`)
 	// print room data
 	for i := 0; i < len(roomData); i++ {
 		fmt.Println(roomData[i])
