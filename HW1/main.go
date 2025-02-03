@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func readCsvFile(filePath string) [][]string {
+func (c *Cleaner) readCsvFile(filePath string) [][]string {
 	f, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal("Unable to read input file "+filePath, err)
@@ -23,11 +23,44 @@ func readCsvFile(filePath string) [][]string {
 	}(f)
 
 	csvReader := csv.NewReader(f)
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		log.Fatal("Unable to parse file as CSV for "+filePath, err)
+	csvReader.FieldsPerRecord = -1
+	csvReader.Comment = '#' // Ignore lines starting with #
+
+	for i := 0; i < 5; i++ {
+		initialState, err := csvReader.Read()
+		if err != nil {
+			fmt.Print("Error reading csv data", err)
+		}
+
+		value, err := strconv.Atoi(strings.TrimSpace(initialState[0]))
+		if err != nil {
+			fmt.Println("Error converting initial state value to int:", err)
+			continue
+		}
+		fmt.Println("Value:", value)
+		if i == 0 {
+			c.locationX = value
+		}
+		if i == 1 {
+			c.locationY = value
+		}
+		if i == 2 {
+			c.battery = value
+		}
+		if i == 3 {
+			c.movementEnergy = value
+		}
+		if i == 4 {
+			c.vacuumEnergy = value
+		}
+
 	}
 
+	// Read all the remaining records
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal("Error reading csv data", err)
+	}
 	return records
 }
 
@@ -42,12 +75,14 @@ type Cleaner struct {
 	dirtVolume     int
 }
 
-func (c *Cleaner) feedback(path []string) {
+func (c *Cleaner) feedback() {
 	fmt.Println("Location X:", c.locationX)
 	fmt.Println("Location Y:", c.locationY)
 	fmt.Println("Battery:", c.battery)
+	fmt.Println("Movement energy:", c.movementEnergy)
+	fmt.Println("Vacuum energy:", c.vacuumEnergy)
 	fmt.Println("Dirt volume:", c.dirtVolume)
-	fmt.Println("Path:", path)
+	// fmt.Println("Path:", path)
 }
 func (c *Cleaner) moveLeft(room [][]string) {
 	if c.locationX > 0 && c.battery >= c.movementEnergy {
@@ -425,18 +460,16 @@ func (c *Cleaner) decideToClean(roomData [][]string) {
 	// Add cleaning logic here
 	if tileValue, err := strconv.Atoi(strings.TrimSpace(roomData[c.locationY][c.locationX])); err == nil && tileValue > 0 {
 		c.clean(roomData)
+
+		// Update the room data
+		roomData[c.locationY][c.locationX] = "0"
 	}
 
 }
 
 func main() {
-	roomData := readCsvFile(`C:\Users\Admin\GolandProjects\Intro_to_AI_hw\HW1\room.csv`)
-	// print room data
-	for i := 0; i < len(roomData); i++ {
-		fmt.Println(roomData[i])
-	}
+	// Create a new cleaner, which data will be overwritten by the csv file
 
-	// Create a new cleaner
 	cleaner := Cleaner{
 		name:           "Rumba",
 		model:          "Elizabete",
@@ -446,25 +479,35 @@ func main() {
 		movementEnergy: 1,
 		vacuumEnergy:   5,
 	}
-	//path := []string{"(0,0)", "(0,1)", "(1,1)", "(2,1)", "(2,2)", "(2,3)", "(1,3)", "(1,4)", "(2,4)", "(3,4)", "(4,4)"}
 
-	//fmt.Println("Path to the dirtiest tile:", path)
-	//// Find the path to the dirtiest tile
-	myPath := AStar(0, 0, roomData) // Start at (0,0)
-	fmt.Println("Path to the dirtiest tile:", myPath)
-	path := GreedyBestFirstSearch(0, 0, roomData)
+	roomData := cleaner.readCsvFile(`C:\Users\37129\Intro_to_Ai\Intro_to_AI_hw\HW1\room.csv`)
+	// roomData := cleaner.readCsvFile(`C:\Users\37129\Intro_to_Ai\Intro_to_AI_hw\HW1\Orginal_room.csv`)
 
-	fmt.Println("Path to the dirtiest tile:", path)
+	fmt.Println("Initial state of the cleaner:")
+	cleaner.feedback()
 
-	// Move the cleaner along the path
-	for _, node := range myPath {
-		if node == "(0,0)" {
-			continue
+
+	fmt.Println(roomData)
+	for cleaner.battery > 0 {
+		myPath := AStar(cleaner.locationX, cleaner.locationY, roomData) // Start at current location
+
+		if len(myPath) == 0 {
+			fmt.Println("No more paths to dirtiest tiles.")
+			break
 		}
-		cleaner.moveSomewhere(node, roomData)
-		cleaner.decideToClean(roomData)
+
+		fmt.Println("Path to the dirtiest tile:", myPath)
+
+		// Move the cleaner along the path
+		for _, node := range myPath {
+			if node == fmt.Sprintf("(%d,%d)", cleaner.locationX, cleaner.locationY) {
+				continue
+			}
+			cleaner.moveSomewhere(node, roomData)
+			cleaner.decideToClean(roomData)
+		}
+		cleaner.feedback()
 	}
 
-	cleaner.feedback(myPath)
 
 }
