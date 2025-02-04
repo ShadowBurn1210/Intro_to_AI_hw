@@ -73,16 +73,14 @@ type Cleaner struct {
 	movementEnergy int
 	vacuumEnergy   int
 	dirtVolume     int
+	tilesCleaned   int
 }
 
-func (c *Cleaner) feedback() {
-	fmt.Println("Location X:", c.locationX)
-	fmt.Println("Location Y:", c.locationY)
+func (c *Cleaner) feedback(path []string) {
 	fmt.Println("Battery:", c.battery)
-	fmt.Println("Movement energy:", c.movementEnergy)
-	fmt.Println("Vacuum energy:", c.vacuumEnergy)
 	fmt.Println("Dirt volume:", c.dirtVolume)
-	// fmt.Println("Path:", path)
+	fmt.Println("Path:", path)
+	fmt.Println("Tiles cleaned:", c.tilesCleaned)
 }
 func (c *Cleaner) moveLeft(room [][]string) {
 	if c.locationX > 0 && c.battery >= c.movementEnergy {
@@ -151,6 +149,7 @@ func (c *Cleaner) clean(room [][]string) {
 			return
 		}
 		c.dirtVolume += tileValueInt
+		c.tilesCleaned += 1
 		fmt.Println("Cleaning tile with value:", tileValue)
 	} else {
 		fmt.Println("You don't have enough battery")
@@ -300,7 +299,7 @@ func abs(a int) int {
 	}
 	return a
 }
-
+// moveSomewhere is a function that moves the cleaner to the next node, based on the path calculated by the A* algorithm
 func (c *Cleaner) moveSomewhere(nextNode string, roomData [][]string) {
 	coords := strings.Trim(nextNode, "()")
 	parts := strings.Split(coords, ",")
@@ -329,6 +328,8 @@ func (c *Cleaner) moveSomewhere(nextNode string, roomData [][]string) {
 
 }
 
+
+// decideToClean is a simple function that decides whether the cleaner should clean the current tile or not, based on if the tiles value is above 0
 func (c *Cleaner) decideToClean(roomData [][]string) {
 	// Add cleaning logic here
 	if tileValue, err := strconv.Atoi(strings.TrimSpace(roomData[c.locationY][c.locationX])); err == nil && tileValue > 0 {
@@ -341,24 +342,22 @@ func (c *Cleaner) decideToClean(roomData [][]string) {
 }
 
 func main() {
-	// Create a new cleaner, which data will be overwritten by the csv file
 
+	// Create a new cleaner, which data will be overwritten by the csv file
 	cleaner := Cleaner{
-		name:           "Rumba",
+		name:           "Rummba",
 		model:          "Elizabete",
 		locationX:      0,
 		locationY:      0,
 		battery:        50,
 		movementEnergy: 1,
 		vacuumEnergy:   5,
+		tilesCleaned:   0,
 	}
 
+	// Read the csv file and get all the data
 	roomData := cleaner.readCsvFile(`C:\Users\37129\Intro_to_Ai\Intro_to_AI_hw\HW1\room.csv`)
-	// roomData := cleaner.readCsvFile(`C:\Users\37129\Intro_to_Ai\Intro_to_AI_hw\HW1\Orginal_room.csv`)
-
-	fmt.Println("Initial state of the cleaner:")
-	cleaner.feedback()
-
+	totalPath := []string{}
 	fmt.Println(roomData)
 	for cleaner.battery > 0 {
 		myPath := AStar(cleaner.locationX, cleaner.locationY, roomData) // Start at current location
@@ -368,8 +367,6 @@ func main() {
 			break
 		}
 
-		fmt.Println("Path to the dirtiest tile:", myPath)
-
 		// Move the cleaner along the path
 		for _, node := range myPath {
 			if node == fmt.Sprintf("(%d,%d)", cleaner.locationX, cleaner.locationY) {
@@ -378,7 +375,9 @@ func main() {
 			cleaner.moveSomewhere(node, roomData)
 			cleaner.decideToClean(roomData)
 		}
-		cleaner.feedback()
+		// Add the path to the total path
+		totalPath = append(totalPath, myPath...)
 	}
+	cleaner.feedback(totalPath)
 
 }
