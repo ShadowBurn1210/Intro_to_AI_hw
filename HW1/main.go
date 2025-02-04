@@ -158,6 +158,8 @@ func (c *Cleaner) clean(room [][]string) {
 }
 
 // AStar Whole a* algorithm was implemented with large help of Deep Seek R1 model, which does not provide link for chat reference
+// This was my promt : "Can you edit this Astar algorithm, so that it finds shortest path to the dirtiest node, but if there is a node with value 9001 it knows it is a wall"
+// Which used initialy a* algorithm from internet site which I can't find anymore
 func AStar(startX, startY int, room [][]string) []string {
 	type Node struct {
 		x, y, g, h, f int
@@ -292,135 +294,6 @@ func AStar(startX, startY int, room [][]string) []string {
 	return nil // No path found
 }
 
-// GreedyBestFirstSearch Whole GreedyBestFirstSearch algorithm was implemented with large help of Deep Seek R1 model, which does not provide link for chat reference
-func GreedyBestFirstSearch(startX, startY int, room [][]string) []string {
-	type Node struct {
-		x, y, h int   // x, y coordinates and heuristic value
-		parent  *Node // Parent node for path reconstruction
-	}
-
-	// Preprocess to find the dirtiest nodes (max non-wall value)
-	maxDirt := -1
-	var dirtiestNodes []struct{ x, y int }
-	for y, row := range room {
-		for x := range row {
-			valStr := strings.TrimSpace(room[y][x])
-			if valStr == "9001" {
-				continue // Skip walls
-			}
-			val, err := strconv.Atoi(valStr)
-			if err != nil || val <= 0 {
-				continue // Skip invalid or clean nodes
-			}
-			if val > maxDirt {
-				maxDirt = val
-				dirtiestNodes = []struct{ x, y int }{{x, y}}
-			} else if val == maxDirt {
-				dirtiestNodes = append(dirtiestNodes, struct{ x, y int }{x, y})
-			}
-		}
-	}
-
-	if len(dirtiestNodes) == 0 {
-		return nil // No dirty nodes to clean
-	}
-
-	// Create quick lookup map for dirtiest nodes
-	dirtiestMap := make(map[string]bool)
-	for _, node := range dirtiestNodes {
-		dirtiestMap[fmt.Sprintf("%d,%d", node.x, node.y)] = true
-	}
-
-	// Heuristic: minimum Manhattan distance to any dirtiest node
-	heuristic := func(x, y int) int {
-		minDist := math.MaxInt32
-		for _, dn := range dirtiestNodes {
-			dist := abs(x-dn.x) + abs(y-dn.y)
-			if dist < minDist {
-				minDist = dist
-			}
-		}
-		return minDist
-	}
-
-	// Get valid neighbors (non-wall nodes)
-	neighbors := func(node *Node) []*Node {
-		directions := [][2]int{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
-		var result []*Node
-		for _, d := range directions {
-			nx, ny := node.x+d[0], node.y+d[1]
-			if nx >= 0 && ny >= 0 && nx < len(room[0]) && ny < len(room) {
-				valStr := strings.TrimSpace(room[ny][nx])
-				if valStr != "9001" { // Skip walls
-					result = append(result, &Node{x: nx, y: ny})
-				}
-			}
-		}
-		return result
-	}
-
-	// Initialize open set with start node
-	openSet := []*Node{{
-		x: startX,
-		y: startY,
-		h: heuristic(startX, startY),
-	}}
-	closedSet := make(map[string]bool)
-	nodeMap := make(map[string]*Node)
-
-	for len(openSet) > 0 {
-		// Find node with lowest h-cost
-		currentIndex := 0
-		current := openSet[0]
-		for i, node := range openSet {
-			if node.h < current.h {
-				current = node
-				currentIndex = i
-			}
-		}
-
-		// Check if we've reached a dirtiest node
-		if dirtiestMap[fmt.Sprintf("%d,%d", current.x, current.y)] {
-			var path []string
-			for current != nil {
-				path = append([]string{fmt.Sprintf("(%d,%d)", current.x, current.y)}, path...)
-				current = current.parent
-			}
-			return path
-		}
-
-		// Move current node to closed set
-		openSet = append(openSet[:currentIndex], openSet[currentIndex+1:]...)
-		closedSet[fmt.Sprintf("%d,%d", current.x, current.y)] = true
-
-		// Process neighbors
-		for _, neighbor := range neighbors(current) {
-			neighborKey := fmt.Sprintf("%d,%d", neighbor.x, neighbor.y)
-			if closedSet[neighborKey] {
-				continue // Skip if already evaluated
-			}
-
-			// Calculate heuristic for the neighbor
-			neighbor.h = heuristic(neighbor.x, neighbor.y)
-			neighbor.parent = current
-
-			// Check if the neighbor is already in the open set
-			existing, exists := nodeMap[neighborKey]
-			if !exists {
-				// If not, add it to the open set and nodeMap
-				openSet = append(openSet, neighbor)
-				nodeMap[neighborKey] = neighbor
-			} else if neighbor.h < existing.h {
-				// If it exists but this path has a better heuristic, update it
-				existing.h = neighbor.h
-				existing.parent = current
-			}
-		}
-	}
-
-	return nil // No path found
-}
-
 func abs(a int) int {
 	if a < 0 {
 		return -a
@@ -486,7 +359,6 @@ func main() {
 	fmt.Println("Initial state of the cleaner:")
 	cleaner.feedback()
 
-
 	fmt.Println(roomData)
 	for cleaner.battery > 0 {
 		myPath := AStar(cleaner.locationX, cleaner.locationY, roomData) // Start at current location
@@ -508,6 +380,5 @@ func main() {
 		}
 		cleaner.feedback()
 	}
-
 
 }
