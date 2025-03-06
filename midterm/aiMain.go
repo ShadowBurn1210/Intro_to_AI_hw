@@ -117,12 +117,6 @@ func isValidMove(board [][]int, x, y int) bool {
 	if x < 0 || y < 0 || x >= len(board) || y >= len(board) {
 		return false
 	}
-	// Check if this move has already been played
-	for _, move := range movesPlayed {
-		if move.x == x && move.y == y {
-			return false
-		}
-	}
 	return board[x][y] == EMPTY
 }
 
@@ -185,6 +179,28 @@ func findSafeMove(board [][]int) ([2]int, error) {
 
 var movesPlayed = []Move{}
 
+// Reset the moves played list at the start of each game
+func (g *Game) resetMovesPlayed() {
+	movesPlayed = []Move{}
+}
+
+// Sync the moves played with the actual board state
+func syncMovesWithBoard(board [][]int) {
+	// Clear the moves list
+	movesPlayed = []Move{}
+
+	// Scan the board and add all non-empty positions to the moves list
+	for i := 0; i < len(board); i++ {
+		for j := 0; j < len(board[i]); j++ {
+			if board[i][j] != EMPTY {
+				movesPlayed = append(movesPlayed, Move{x: i, y: j})
+			}
+		}
+	}
+
+	fmt.Printf("Synced %d moves with the board state\n", len(movesPlayed))
+}
+
 func main() {
 	newGame := Game{}
 
@@ -194,6 +210,9 @@ func main() {
 		return
 	}
 	fmt.Println("Game initialized successfully!")
+
+	// Reset moves played at the start of a new game
+	newGame.resetMovesPlayed()
 
 	// create a while loop to keep the game running
 	for {
@@ -231,24 +250,15 @@ func main() {
 			board := convertGameboard(newGame.Gameboard)
 			printBoardWithIndexing(board)
 
+			// Sync our moves tracking with the actual board state
+			syncMovesWithBoard(board)
+
 			// Send a move request if it's our turn
 			if newGame.Turn == newGame.Color {
 				// Convert the gameboard to the format expected by the algorithm
 				board := convertGameboard(newGame.Gameboard)
 
-				// Update the board with all previously played moves to ensure algorithm has accurate state
-				for _, move := range movesPlayed {
-					// Determine which player made the move (only needed if not accurately reflected in board)
-					if board[move.x][move.y] == EMPTY {
-						fmt.Printf("Warning: Move [%d,%d] was recorded but not reflected in board\n", move.x, move.y)
-						// Assuem we made the move
-						if newGame.Color == "BLACK" {
-							board[move.x][move.y] = 1
-						} else {
-							board[move.x][move.y] = 2
-						}
-					}
-				}
+				// No need to update board with previously played moves as we've synced with the actual board
 
 				// Find the best move using the Minimax algorithm with validation
 				bestMove := getBestMoveWithValidation(board, newGame.Color, 3) // Adjust depth as needed
