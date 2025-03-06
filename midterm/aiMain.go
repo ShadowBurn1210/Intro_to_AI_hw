@@ -227,6 +227,10 @@ func main() {
 			// Print the updated board data
 			fmt.Println("Board data:", newGame.Gameboard)
 
+			// Print board with proper indexing for better visualization
+			board := convertGameboard(newGame.Gameboard)
+			printBoardWithIndexing(board)
+
 			// Send a move request if it's our turn
 			if newGame.Turn == newGame.Color {
 				// Convert the gameboard to the format expected by the algorithm
@@ -315,6 +319,7 @@ func main() {
 }
 
 // Helper function to convert the gameboard from the API format to the algorithm format
+// Ensuring proper 0,0 indexing
 func convertGameboard(gameboard [][]int) [][]int {
 	board := make([][]int, len(gameboard))
 	for i := range gameboard {
@@ -324,4 +329,22 @@ func convertGameboard(gameboard [][]int) [][]int {
 		}
 	}
 	return board
+}
+
+// Print the board with proper indexing for debugging
+func printBoardWithIndexing(board [][]int) {
+	fmt.Println("Board with indexing (x,y):")
+	fmt.Print("  ")
+	for j := 0; j < len(board[0]); j++ {
+		fmt.Printf("%2d ", j)
+	}
+	fmt.Println()
+
+	for i := 0; i < len(board); i++ {
+		fmt.Printf("%2d ", i)
+		for j := 0; j < len(board[i]); j++ {
+			fmt.Printf("%2d ", board[i][j])
+		}
+		fmt.Println()
+	}
 }
