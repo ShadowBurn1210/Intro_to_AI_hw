@@ -52,15 +52,6 @@ func (g *Game) sendStartRequest() error {
 		return err
 	}
 
-	// Print game data to verify it was correctly loaded
-	fmt.Println("Game data loaded successfully:")
-	fmt.Printf("Color: %s\n", g.Color)
-	fmt.Printf("Game ID: %d\n", g.GameID)
-	fmt.Printf("Game Status: %s\n", g.GameStatus)
-	fmt.Printf("Time Remaining: %.1f\n", g.TimeRemaining)
-	fmt.Printf("Turn: %s\n", g.Turn)
-	fmt.Printf("Board Size: %d x %d\n", len(g.Gameboard), len(g.Gameboard[0]))
-
 	return nil
 }
 
@@ -117,6 +108,7 @@ func isValidMove(board [][]int, x, y int) bool {
 	if x < 0 || y < 0 || x >= len(board) || y >= len(board) {
 		return false
 	}
+
 	return board[x][y] == EMPTY
 }
 
@@ -128,7 +120,12 @@ func getBestMoveWithValidation(board [][]int, color string, maxDepth int) [2]int
 	for isMoveAlreadyPlayed(bestMove) {
 		// If already played, mark the position as occupied and recalculate
 		fmt.Printf("Move [%d,%d] already played, recalculating...\n", bestMove[0], bestMove[1])
-		board[bestMove[0]][bestMove[1]] = 999 // Mark as unavailable
+		// Mark it as our piece to avoid it in the future
+		if color == "BLACK" {
+			board[bestMove[0]][bestMove[1]] = 1 // Mark as unavailable
+		} else {
+			board[bestMove[0]][bestMove[1]] = 2 // Mark as unavailable
+		}
 		bestMove = findBestMove(board, color, maxDepth)
 	}
 
@@ -139,9 +136,11 @@ func getBestMoveWithValidation(board [][]int, color string, maxDepth int) [2]int
 func isMoveAlreadyPlayed(move [2]int) bool {
 	for _, playedMove := range movesPlayed {
 		if playedMove.x == move[0] && playedMove.y == move[1] {
+			
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -223,7 +222,6 @@ func main() {
 			// update the game state
 			endpoint := fmt.Sprintf("http://37.27.208.205:55555/%s/%d", student_id, newGame.GameID)
 			response, err := http.Get(endpoint)
-			fmt.Println("Game is still ongoing!")
 			if err != nil {
 				fmt.Println("Error sending request:", err)
 				return
@@ -243,22 +241,18 @@ func main() {
 				return
 			}
 
-			// Print the updated board data
-			fmt.Println("Board data:", newGame.Gameboard)
-
 			// Print board with proper indexing for better visualization
 			board := convertGameboard(newGame.Gameboard)
 			printBoardWithIndexing(board)
 
-			// Sync our moves tracking with the actual board state
-			syncMovesWithBoard(board)
 
 			// Send a move request if it's our turn
 			if newGame.Turn == newGame.Color {
-				// Convert the gameboard to the format expected by the algorithm
-				board := convertGameboard(newGame.Gameboard)
+				// Sync our moves tracking with the actual board state
+				syncMovesWithBoard(board)
 
-				// No need to update board with previously played moves as we've synced with the actual board
+				// Convert the gameboard to the format expected by the algorithm
+				board := convertGameboard(board)
 
 				// Find the best move using the Minimax algorithm with validation
 				bestMove := getBestMoveWithValidation(board, newGame.Color, 3) // Adjust depth as needed

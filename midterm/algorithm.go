@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -17,7 +18,7 @@ func findBestMove(board [][]int, color string, maxDepth int) [2]int {
 	bestScore := math.MinInt32
 	var bestMove [2]int
 
-	moves := generateMoves(board)
+	moves, visited := generateMoves(board)
 
 	for _, move := range moves {
 		x, y := move[0], move[1]
@@ -31,7 +32,28 @@ func findBestMove(board [][]int, color string, maxDepth int) [2]int {
 		}
 	}
 
+	fmt.Printf("Visited %d moves\n", len(visited))
+	fmt.Println(visited)
+
 	return bestMove
+}
+
+// Print the board with proper indexing for debugging
+func printBoardWithIndexing2(board [][]int) {
+	fmt.Println("Board with indexing (x,y):")
+	fmt.Print("  ")
+	for j := 0; j < len(board[0]); j++ {
+		fmt.Printf("%2d ", j)
+	}
+	fmt.Println()
+
+	for i := 0; i < len(board); i++ {
+		fmt.Printf("%2d ", i)
+		for j := 0; j < len(board[i]); j++ {
+			fmt.Printf("%2d ", board[i][j])
+		}
+		fmt.Println()
+	}
 }
 
 func minimax(board [][]int, depth int, alpha int, beta int, maximizingPlayer bool, player int, opponent int) int {
@@ -41,7 +63,8 @@ func minimax(board [][]int, depth int, alpha int, beta int, maximizingPlayer boo
 
 	if maximizingPlayer {
 		maxVal := math.MinInt32
-		moves := generateMoves(board)
+		moves, _ := generateMoves(board)
+
 		for _, move := range moves {
 			x, y := move[0], move[1]
 			newBoard := makeCopy(board)
@@ -61,7 +84,7 @@ func minimax(board [][]int, depth int, alpha int, beta int, maximizingPlayer boo
 		return maxVal
 	} else {
 		minVal := math.MaxInt32
-		moves := generateMoves(board)
+		moves, _ := generateMoves(board)
 		for _, move := range moves {
 			x, y := move[0], move[1]
 			newBoard := makeCopy(board)
@@ -164,16 +187,16 @@ func evaluateConsecutive(count int, openStart bool, openEnd bool) int {
 	switch count {
 	case 4:
 		if openStart || openEnd {
-			return 10000
+			return 100000
 		}
-		return 5000
+		return 50000
 	case 3:
 		if openStart && openEnd {
-			return 1000
+			return 10000
 		} else if openStart || openEnd {
-			return 500
+			return 5000
 		}
-		return 100
+		return 1000
 	case 2:
 		if openStart && openEnd {
 			return 100
@@ -194,22 +217,58 @@ func evaluateConsecutive(count int, openStart bool, openEnd bool) int {
 	}
 }
 
-func generateMoves(board [][]int) [][2]int {
+var once bool = true
+var twice bool = true
+
+func generateMoves(board [][]int) ([][2]int, [][2]int) {
 	size := len(board)
 	moves := make([][2]int, 0)
 	visited := make([][]bool, size)
+	visitedCoords := make([][2]int, 0)
+	
 	for i := range visited {
 		visited[i] = make([]bool, size)
 	}
 
+	// Mark positions of existing moves on the board as visited
+	for x := 0; x < size; x++ {
+		for y := 0; y < size; y++ {
+			if board[x][y] != EMPTY {
+				visited[x][y] = true
+				visitedCoords = append(visitedCoords, [2]int{x, y})
+			}
+		}
+	}
+
+	if len(visitedCoords) >= 10 && once {
+		once = false
+		fmt.Println("Visited Coords qwertyuio:")
+		fmt.Println(visitedCoords)
+		fmt.Println("Board qwertyuio:")
+		printBoardWithIndexing2(board)
+
+	}
+
+
+	if len(visitedCoords) >= 12 && twice {
+		twice = false
+		fmt.Println("Visited Coords qwertyuio:")
+		fmt.Println(visitedCoords)
+		fmt.Println("Board qwertyuio:")
+		printBoardWithIndexing2(board)
+
+	}
+	// Generate possible moves (empty cells around existing pieces)
 	for x := 0; x < size; x++ {
 		for y := 0; y < size; y++ {
 			if board[x][y] != EMPTY {
 				for dx := -2; dx <= 2; dx++ {
 					for dy := -2; dy <= 2; dy++ {
 						nx, ny := x+dx, y+dy
-						if nx >= 0 && nx < size && ny >= 0 && ny < size && !visited[nx][ny] && board[nx][ny] == EMPTY {
-							visited[nx][ny] = true
+							if nx >= 0 && nx < size && ny >= 0 && ny < size &&
+								!visited[nx][ny] && board[nx][ny] == EMPTY {
+
+								visited[nx][ny] = true
 							moves = append(moves, [2]int{nx, ny})
 						}
 					}
@@ -218,17 +277,17 @@ func generateMoves(board [][]int) [][2]int {
 		}
 	}
 
+	// If no moves found, consider any empty cell
 	if len(moves) == 0 {
 		for x := 0; x < size; x++ {
 			for y := 0; y < size; y++ {
-				if board[x][y] == EMPTY {
-					moves = append(moves, [2]int{x, y})
+				if board[x][y] == EMPTY && !visited[x][y] {
+					moves = append(moves, [2]int{y, x})  // Swap x and y herex][y] {
 				}
-			}
-		}
+			}}
 	}
 
-	return moves
+	return moves, visitedCoords
 }
 
 func isTerminal(board [][]int, player int, opponent int) bool {
@@ -280,6 +339,7 @@ func makeCopy(board [][]int) [][]int {
 		newBoard[i] = make([]int, len(board[i]))
 		copy(newBoard[i], board[i])
 	}
+
 	return newBoard
 }
 
