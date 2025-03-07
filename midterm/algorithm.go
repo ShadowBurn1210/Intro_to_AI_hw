@@ -20,6 +20,7 @@ func findBestMove(board [][]int, color string, maxDepth int) [2]int {
 
 	moves, visited := generateMoves(board)
 
+
 	for _, move := range moves {
 		x, y := move[0], move[1]
 		newBoard := makeCopy(board)
@@ -219,45 +220,54 @@ func evaluateConsecutive(count int, openStart bool, openEnd bool) int {
 
 var once bool = true
 var twice bool = true
+var length int = 0
+var trice bool = true
+
 
 func generateMoves(board [][]int) ([][2]int, [][2]int) {
+
 	size := len(board)
 	moves := make([][2]int, 0)
 	visited := make([][]bool, size)
 	visitedCoords := make([][2]int, 0)
-	
+
+	correct_board := give_correct_board()
+
 	for i := range visited {
 		visited[i] = make([]bool, size)
 	}
 
-	// Mark positions of existing moves on the board as visited
+	// Reset visited array to all false
 	for x := 0; x < size; x++ {
 		for y := 0; y < size; y++ {
-			if board[x][y] != EMPTY {
+			visited[x][y] = false
+		}
+	}
+
+
+	// Clear visitedCoords slice
+	visitedCoords = make([][2]int, 0)
+
+	// Correct indexing: swap x and y when accessing the board
+	for x := 0; x < size; x++ {
+		for y := 0; y < size; y++ {
+			if correct_board[y][x] != EMPTY { // Notice [y][x] instead of [x][y]
 				visited[x][y] = true
 				visitedCoords = append(visitedCoords, [2]int{x, y})
 			}
 		}
 	}
 
-	if len(visitedCoords) >= 10 && once {
+	if len(visitedCoords) >10 && once {
+		fmt.Println("Correct Board: qerqwrqewrewq ")
+		printBoardWithIndexing(correct_board)
 		once = false
-		fmt.Println("Visited Coords qwertyuio:")
+		fmt.Println("Visited Coords:")
 		fmt.Println(visitedCoords)
-		fmt.Println("Board qwertyuio:")
-		printBoardWithIndexing2(board)
-
 	}
 
 
-	if len(visitedCoords) >= 12 && twice {
-		twice = false
-		fmt.Println("Visited Coords qwertyuio:")
-		fmt.Println(visitedCoords)
-		fmt.Println("Board qwertyuio:")
-		printBoardWithIndexing2(board)
 
-	}
 	// Generate possible moves (empty cells around existing pieces)
 	for x := 0; x < size; x++ {
 		for y := 0; y < size; y++ {
@@ -265,10 +275,10 @@ func generateMoves(board [][]int) ([][2]int, [][2]int) {
 				for dx := -2; dx <= 2; dx++ {
 					for dy := -2; dy <= 2; dy++ {
 						nx, ny := x+dx, y+dy
-							if nx >= 0 && nx < size && ny >= 0 && ny < size &&
-								!visited[nx][ny] && board[nx][ny] == EMPTY {
+						if nx >= 0 && nx < size && ny >= 0 && ny < size &&
+							!visited[nx][ny] && board[nx][ny] == EMPTY {
 
-								visited[nx][ny] = true
+							visited[nx][ny] = true
 							moves = append(moves, [2]int{nx, ny})
 						}
 					}
@@ -282,9 +292,10 @@ func generateMoves(board [][]int) ([][2]int, [][2]int) {
 		for x := 0; x < size; x++ {
 			for y := 0; y < size; y++ {
 				if board[x][y] == EMPTY && !visited[x][y] {
-					moves = append(moves, [2]int{y, x})  // Swap x and y herex][y] {
+					moves = append(moves, [2]int{y, x}) // Swap x and y herex][y] {
 				}
-			}}
+			}
+		}
 	}
 
 	return moves, visitedCoords
@@ -334,11 +345,23 @@ func isBoardFull(board [][]int) bool {
 }
 
 func makeCopy(board [][]int) [][]int {
+
+	// if !once && length == 1 {
+	// 	fmt.Println("Pld ewrwrewrewrewrboard:")
+	// 	printBoardWithIndexing2(board)
+	// }
+
 	newBoard := make([][]int, len(board))
 	for i := range board {
 		newBoard[i] = make([]int, len(board[i]))
 		copy(newBoard[i], board[i])
 	}
+	// if !once && length == 1 {
+	// 	fmt.Println("New ewrwrewrewrewrboard:")
+	// 	printBoardWithIndexing2(newBoard)
+	// 	length = 0
+	// }
+
 
 	return newBoard
 }

@@ -112,22 +112,28 @@ func isValidMove(board [][]int, x, y int) bool {
 	return board[x][y] == EMPTY
 }
 
+var myonce = false
+var myI = 0
 // Get best move ensuring it hasn't been played before
 func getBestMoveWithValidation(board [][]int, color string, maxDepth int) [2]int {
+
+
+	// Find the best move using the Minimax algorithm
 	bestMove := findBestMove(board, color, maxDepth)
 
+
 	// Check if the move has been played already
-	for isMoveAlreadyPlayed(bestMove) {
-		// If already played, mark the position as occupied and recalculate
-		fmt.Printf("Move [%d,%d] already played, recalculating...\n", bestMove[0], bestMove[1])
-		// Mark it as our piece to avoid it in the future
-		if color == "BLACK" {
-			board[bestMove[0]][bestMove[1]] = 1 // Mark as unavailable
-		} else {
-			board[bestMove[0]][bestMove[1]] = 2 // Mark as unavailable
-		}
-		bestMove = findBestMove(board, color, maxDepth)
-	}
+	// for isMoveAlreadyPlayed(bestMove) {
+	// 	// If already played, mark the position as occupied and recalculate
+	// 	fmt.Printf("Move [%d,%d] already played, recalculating...\n", bestMove[0], bestMove[1])
+	// 	// Mark it as our piece to avoid it in the future
+	// 	if color == "BLACK" {
+	// 		board[bestMove[0]][bestMove[1]] = 1 // Mark as unavailable
+	// 	} else {
+	// 		board[bestMove[0]][bestMove[1]] = 2 // Mark as unavailable
+	// 	}
+	// 	bestMove = findBestMove(board, color, maxDepth)
+	// }
 
 	return bestMove
 }
@@ -200,6 +206,14 @@ func syncMovesWithBoard(board [][]int) {
 	fmt.Printf("Synced %d moves with the board state\n", len(movesPlayed))
 }
 
+var globalBoard = [][]int{
+
+}
+func give_correct_board() [][]int {
+	return globalBoard
+}
+
+
 func main() {
 	newGame := Game{}
 
@@ -241,18 +255,22 @@ func main() {
 				return
 			}
 
+			
 			// Print board with proper indexing for better visualization
 			board := convertGameboard(newGame.Gameboard)
 			printBoardWithIndexing(board)
+			globalBoard = board
 
 
 			// Send a move request if it's our turn
 			if newGame.Turn == newGame.Color {
+
 				// Sync our moves tracking with the actual board state
 				syncMovesWithBoard(board)
 
 				// Convert the gameboard to the format expected by the algorithm
 				board := convertGameboard(board)
+
 
 				// Find the best move using the Minimax algorithm with validation
 				bestMove := getBestMoveWithValidation(board, newGame.Color, 3) // Adjust depth as needed
